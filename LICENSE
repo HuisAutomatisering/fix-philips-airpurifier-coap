@@ -1,30 +1,6 @@
-License information
-===================
-
-This repository is a fork of https://github.com/kongo09/philips-airpurifier-coap,
-which builds on https://github.com/Denaun/philips-airpurifier-coap and
-https://github.com/betaboon/philips-airpurifier-coap.
-
-Upstream code
--------------
-None of the upstream repositories contains a LICENSE file. The upstream
-pyproject.toml declares `license = "MIT"` (added by the upstream maintainer in
-March 2026). The upstream code remains copyright of its respective authors and
-contributors and is used here on that basis. A request to add an explicit
-license file upstream is pending.
-
-Icon loading code
------------------
-The icon loading code is MIT licensed by Thomas Lovén, see
-custom_components/philips_airpurifier_coap/LICENSE.txt.
-
-Changes made in this fork
--------------------------
-Changes made in this fork are licensed under the MIT License below.
-
 MIT License
 
-Copyright (c) 2026 HuisAutomatisering
+Copyright (c) 2020-2026 the philips-airpurifier-coap contributors and HuisAutomatisering
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

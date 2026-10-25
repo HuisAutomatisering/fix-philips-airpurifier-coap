@@ -106,9 +106,9 @@ tier. The status per rule is documented in
 
 ## License
 
-The upstream repositories do not contain a license file; upstream declares MIT in its
-`pyproject.toml`. The upstream code remains copyright of its authors. Changes made in this fork
-are MIT licensed. See [LICENSE](LICENSE) for the details.
+MIT, as declared by the upstream project in its `pyproject.toml`. The upstream repositories do
+not contain a license file yet and the upstream code remains copyright of its authors. See
+[LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 
 ## Credits
 
