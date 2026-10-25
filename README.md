@@ -29,6 +29,7 @@ This fork adds:
 - more robust reconnect handling (timeout on reconnect attempts, errors are logged instead of
   silently dropped)
 - CI for Ruff, hassfest, HACS validation, tests and CodeQL
+- the Philips (`pap:`) icons are set from code, so `icons.json` passes hassfest with MDI fallbacks
 
 The integration domain is unchanged (`philips_airpurifier_coap`), so existing devices,
 entities and automations keep working when you switch.
@@ -114,8 +115,6 @@ tier. The status per rule is documented in
   consider [buying kongo09 a coffee](https://www.buymeacoffee.com/kongo09)
 - Many other contributors, notably @mhetzi, @Kraineff and @shexbeer
 - Icon loading code by @thomasloven
-
-The icon in `Brand/` is a generic drawing and not the Philips logo.
 
 ## Supported models
 

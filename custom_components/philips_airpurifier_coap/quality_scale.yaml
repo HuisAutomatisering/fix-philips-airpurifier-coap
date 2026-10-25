@@ -9,7 +9,9 @@ rules:
   appropriate-polling:
     status: exempt
     comment: Local push integration, the device pushes status updates over CoAP observe.
-  brands: done
+  brands:
+    status: done
+    comment: Icon and logo come from the home-assistant/brands repository.
   common-modules:
     status: done
     comment: Coordinator in coordinator.py, base entity in entity.py.

@@ -11,6 +11,7 @@ from homeassistant.helpers.entity import Entity
 
 from .config_entry_data import ConfigEntryData
 from .const import DOMAIN, MANUFACTURER, PhilipsApi
+from .custom_icons import PAP_ENTITY_ICONS
 from .helpers import extract_model
 
 
@@ -58,6 +59,27 @@ class PhilipsEntity(Entity):
     def available(self):
         """Return if the device is available."""
         return self.coordinator.status is not None
+
+    @property
+    def icon(self) -> str | None:
+        """Return an explicit icon, or the Philips (pap:) icon for the current state."""
+        if (icon := super().icon) is not None:
+            return icon
+        return self._pap_icon()
+
+    def _pap_icon(self) -> str | None:
+        """Return the Philips icon for this entity and its state, if there is one.
+
+        Returns None when no Philips icon is defined, so the MDI icon from
+        icons.json is used instead.
+        """
+        platform = getattr(self, "platform", None)
+        if platform is None or self.translation_key is None:
+            return None
+        icons = PAP_ENTITY_ICONS.get(platform.domain, {}).get(self.translation_key)
+        if not icons:
+            return None
+        return icons.get("state", {}).get(str(self.state), icons.get("default"))
 
     @property
     def _device_status(self) -> dict[str, Any]:

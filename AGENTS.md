@@ -23,7 +23,7 @@ custom_components/philips_airpurifier_coap/
 ├── coordinator.py        # Push-based coordinator (CoAP observe + reconnect timer)
 ├── entity.py             # PhilipsEntity base class
 ├── quality_scale.yaml    # Bronze self-assessment
-├── brand/                # Generic integration icon
+├── custom_icons.py       # Philips pap: icons per entity (icons.json only allows mdi:)
 ├── philips.py            # Control base classes + 50+ device-specific fan classes
 ├── model.py              # DeviceInformation, DeviceStatus, TypedDict descriptors
 ├── helpers.py            # extract_name(), extract_model()

@@ -34,6 +34,11 @@ async def test_setup_and_unload(hass: HomeAssistant, mock_integration_client: As
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.device_information.device_id == DEVICE_ID
     assert hass.states.async_entity_ids("fan")
+    # Philips (pap:) icons are set from code, icons.json only holds MDI fallbacks
+    assert any(
+        state.attributes.get("icon") == "pap:light_dimming_button"
+        for state in hass.states.async_all("light")
+    )
 
     device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, DEVICE_ID)})
     assert device is not None
