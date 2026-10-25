@@ -1,10 +1,6 @@
 {
   "domain": "philips_airpurifier_coap",
   "name": "Philips AirPurifier (with CoAP)",
-  "categories": [
-    "climate.air_purifiers_humidifiers",
-    "sensors.air_quality"
-  ],
   "codeowners": [
     "@HuisAutomatisering"
   ],
@@ -44,5 +40,5 @@
     "aioairctrl==0.3.1",
     "getmac>=0.9.4"
   ],
-  "version": "0.26.1"
+  "version": "0.26.2"
 }

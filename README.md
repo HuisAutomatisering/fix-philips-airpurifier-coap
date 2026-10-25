@@ -1,6 +1,6 @@
 # Philips AirPurifier (with CoAP)
 
-[![Release](https://img.shields.io/github/v/release/HuisAutomatisering/fix-philips-airpurifier-coap)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/releases/latest)
+[![Release](https://img.shields.io/github/v/release/HuisAutomatisering/fix-philips-airpurifier-coap?sort=semver&display_name=tag)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/releases/latest)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
 [![HACS validation](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hacs.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hacs.yml)
 [![Hassfest](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hassfest.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hassfest.yml)
@@ -8,7 +8,6 @@
 [![Tests](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml)
 [![Quality scale: Bronze](https://img.shields.io/badge/quality%20scale-Bronze%20(aligned)-cd7f32.svg)](#quality-scale)
-[![License: MIT](https://img.shields.io/github/license/HuisAutomatisering/fix-philips-airpurifier-coap)](LICENSE)
 
 [![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=HuisAutomatisering&repository=fix-philips-airpurifier-coap&category=integration)
 
@@ -104,6 +103,12 @@ This integration is **aligned with the Home Assistant quality scale: Bronze**.
 Home Assistant only grades core integrations, so this is a self-assessment and not an official
 tier. The status per rule is documented in
 [`quality_scale.yaml`](custom_components/philips_airpurifier_coap/quality_scale.yaml).
+
+## License
+
+The upstream repositories do not contain a license file; upstream declares MIT in its
+`pyproject.toml`. The upstream code remains copyright of its authors. Changes made in this fork
+are MIT licensed. See [LICENSE](LICENSE) for the details.
 
 ## Credits
 
