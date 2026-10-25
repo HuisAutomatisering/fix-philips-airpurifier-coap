@@ -1,0 +1,35 @@
+# Self-assessment against the Home Assistant integration quality scale.
+# This is a custom integration: Home Assistant only grades core integrations,
+# so this file documents alignment with the Bronze tier, not an official rating.
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: The integration does not register custom actions.
+  appropriate-polling:
+    status: exempt
+    comment: Local push integration, the device pushes status updates over CoAP observe.
+  brands: done
+  common-modules:
+    status: done
+    comment: Coordinator in coordinator.py, base entity in entity.py.
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency:
+    status: done
+    comment: aioairctrl is open source on GitHub and published to PyPI by CI.
+  docs-actions:
+    status: exempt
+    comment: The integration does not register custom actions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  entity-event-setup:
+    status: done
+    comment: Entities subscribe to the coordinator in async_added_to_hass.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done

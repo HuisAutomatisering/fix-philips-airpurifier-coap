@@ -3,101 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Callable, Mapping
 from datetime import timedelta
+import logging
 from typing import Any, ClassVar
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
-from homeassistant.helpers.entity import Entity
+from homeassistant.core import HomeAssistant
 from homeassistant.util.percentage import (
     ordered_list_item_to_percentage,
     percentage_to_ordered_list_item,
 )
 
 from .config_entry_data import ConfigEntryData
-from .const import (
-    DOMAIN,
-    ICON,
-    MANUFACTURER,
-    PAP,
-    SWITCH_OFF,
-    SWITCH_ON,
-    FanAttributes,
-    FanModel,
-    PhilipsApi,
-    PresetMode,
-)
-from .helpers import extract_model
+from .const import ICON, PAP, SWITCH_OFF, SWITCH_ON, FanAttributes, FanModel, PhilipsApi, PresetMode
+from .entity import PhilipsEntity
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class PhilipsEntity(Entity):
-    """Class to represent a generic Philips entity."""
-
-    _attr_has_entity_name = True
-
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        entry: ConfigEntry,
-        config_entry_data: ConfigEntryData,
-    ) -> None:
-        """Initialize the PhilipsEntity."""
-
-        super().__init__()
-
-        self.hass = hass
-        self.config_entry = entry
-        self.config_entry_data = config_entry_data
-        self.coordinator = self.config_entry_data.coordinator
-
-        name = self.config_entry_data.device_information.name
-        model = extract_model(self._device_status)
-
-        self._attr_device_info = DeviceInfo(
-            name=name,
-            manufacturer=MANUFACTURER,
-            model=model,
-            sw_version=self._device_status[PhilipsApi.WIFI_VERSION],
-            serial_number=self._device_status[PhilipsApi.DEVICE_ID],
-            identifiers={(DOMAIN, self._device_status[PhilipsApi.DEVICE_ID])},
-            connections={(CONNECTION_NETWORK_MAC, self.config_entry_data.device_information.mac)}
-            if self.config_entry_data.device_information.mac is not None
-            else set(),
-        )
-
-    @property
-    def should_poll(self) -> bool:
-        """No need to poll. Coordinator notifies entity of updates."""
-        return False
-
-    @property
-    def available(self):
-        """Return if the device is available."""
-        return self.coordinator.status is not None
-
-    @property
-    def _device_status(self) -> dict[str, Any]:
-        """Return the status of the device."""
-        return self.coordinator.status
-
-    async def async_added_to_hass(self) -> None:
-        """Register with hass that routine got added."""
-
-        remove_callback = self.coordinator.async_add_listener(self._handle_coordinator_update)
-
-        self.async_on_remove(remove_callback)
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        self.config_entry_data.latest_status = self._device_status
-        self.async_write_ha_state()
 
 
 class PhilipsGenericControlBase(PhilipsEntity):
@@ -264,7 +187,9 @@ class PhilipsGenericFanBase(PhilipsGenericControlBase, FanEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn the fan off."""
-        await self.coordinator.client.set_control_value(self.KEY_PHILIPS_POWER, self.STATE_POWER_OFF)
+        await self.coordinator.client.set_control_value(
+            self.KEY_PHILIPS_POWER, self.STATE_POWER_OFF
+        )
 
         self._device_status[self.KEY_PHILIPS_POWER] = self.STATE_POWER_OFF
         self._handle_coordinator_update()
@@ -712,7 +637,9 @@ class PhilipsAC1214(PhilipsGenericFan):
         # so it needs to be done in sequence
         if not self.is_on:
             _LOGGER.debug("AC1214 is switched on without setting a mode")
-            await self.coordinator.client.set_control_value(PhilipsApi.POWER, PhilipsApi.POWER_MAP[SWITCH_ON])
+            await self.coordinator.client.set_control_value(
+                PhilipsApi.POWER, PhilipsApi.POWER_MAP[SWITCH_ON]
+            )
             await asyncio.sleep(1)
 
         # the AC1214 also doesn't seem to like switching to mode 'M' without cycling through mode 'A'
@@ -741,7 +668,9 @@ class PhilipsAC1214(PhilipsGenericFan):
         # so it needs to be done in sequence
         if not self.is_on:
             _LOGGER.debug("AC1214 is switched on without setting a mode")
-            await self.coordinator.client.set_control_value(PhilipsApi.POWER, PhilipsApi.POWER_MAP[SWITCH_ON])
+            await self.coordinator.client.set_control_value(
+                PhilipsApi.POWER, PhilipsApi.POWER_MAP[SWITCH_ON]
+            )
             await asyncio.sleep(1)
 
         current_pattern = self._available_preset_modes.get(self.preset_mode)
@@ -782,7 +711,9 @@ class PhilipsAC1214(PhilipsGenericFan):
         # so it needs to be done in sequence
         if not self.is_on:
             _LOGGER.debug("AC1214 is switched on without setting a mode")
-            await self.coordinator.client.set_control_value(PhilipsApi.POWER, PhilipsApi.POWER_MAP[SWITCH_ON])
+            await self.coordinator.client.set_control_value(
+                PhilipsApi.POWER, PhilipsApi.POWER_MAP[SWITCH_ON]
+            )
             await asyncio.sleep(1)
 
         if preset_mode:

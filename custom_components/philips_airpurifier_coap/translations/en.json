@@ -1,16 +1,21 @@
 {
   "title": "Philips AirPurifier",
   "config": {
+    "flow_title": "{name}",
     "abort": {
       "already_configured": "Device already configured",
       "model_unsupported": "Model unsupported",
-      "timeout": "Timeout, cannot connect to device"
+      "timeout": "Timeout, cannot connect to device",
+      "cannot_connect": "Cannot connect to device"
     },
     "step": {
       "user": {
         "title": "New Philips AirPurifier",
         "data": {
           "host": "Device hostname or IP address"
+        },
+        "data_description": {
+          "host": "Hostname or IP address of the Philips device on your local network. A fixed IP address (DHCP reservation) is recommended."
         }
       },
       "confirm": {
@@ -18,8 +23,9 @@
       }
     },
     "error": {
-      "host": "Device address is required",
-      "connect": "Cannot connect to device"
+      "host": "Invalid hostname or IP address",
+      "connect": "Cannot connect to device",
+      "timeout": "Timeout, the device does not answer"
     }
   },
   "options": {
@@ -28,11 +34,14 @@
         "title": "Reconfigure Philips AirPurifier",
         "data": {
           "host": "Device hostname or IP address"
+        },
+        "data_description": {
+          "host": "New hostname or IP address of the same Philips device."
         }
       }
     },
     "error": {
-      "host": "Device address is required",
+      "host": "Invalid hostname or IP address",
       "connect": "Cannot connect to device",
       "timeout": "Timeout, cannot connect to device",
       "different_device": "The device at this address is not the same as the configured device"

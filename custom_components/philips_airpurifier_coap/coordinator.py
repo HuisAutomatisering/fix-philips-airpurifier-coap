@@ -1,13 +1,13 @@
 """Module containing the Coordinator class to manage data requests from the Philips API."""
 
 import asyncio
-import contextlib
-import logging
 from asyncio.tasks import Task
 from collections.abc import Callable
+import logging
 from typing import Any
 
 from aioairctrl import CoAPClient
+
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 
@@ -16,12 +16,15 @@ from .timer import Timer
 _LOGGER = logging.getLogger(__name__)
 
 MISSED_PACKAGE_COUNT = 3
+RECONNECT_TIMEOUT = 30
 
 
 class Coordinator:
     """Class to coordinate the data requests from the Philips API."""
 
-    def __init__(self, hass: HomeAssistant, client: CoAPClient, host: str, status: dict[str, Any] | None) -> None:
+    def __init__(
+        self, hass: HomeAssistant, client: CoAPClient, host: str, status: dict[str, Any] | None
+    ) -> None:
         """Initialize the Coordinator.
 
         :param hass: HomeAssistant instance.
@@ -57,6 +60,10 @@ class Coordinator:
         if self._timer_disconnected is not None:
             self._timer_disconnected.cancel()
 
+        if self._task is not None:
+            self._task.cancel()
+            self._task = None
+
         if self.client is not None:
             await self.client.shutdown()
 
@@ -77,18 +84,26 @@ class Coordinator:
         """Reconnect to the API connection."""
 
         try:
-            with contextlib.suppress(Exception):
+            try:
                 await self.client.shutdown()
-            self.client = await CoAPClient.create(self.host)
+            except Exception as ex:  # the old client may already be broken
+                _LOGGER.debug("Ignoring error while closing old client for %s: %s", self.host, ex)
+            async with asyncio.timeout(RECONNECT_TIMEOUT):
+                self.client = await CoAPClient.create(self.host)
+            _LOGGER.debug("Reconnected to %s", self.host)
             self._start_observing()
 
         except asyncio.CancelledError:
-            # Silently drop this exception, because we are responsible for it.
-            # Reconnect took to long
-            pass
+            # A newer reconnect attempt replaced this one; nothing else to do.
+            _LOGGER.debug("Reconnect attempt for %s was cancelled", self.host)
+
+        except TimeoutError:
+            _LOGGER.warning(
+                "Reconnect to %s timed out after %ss, will retry", self.host, RECONNECT_TIMEOUT
+            )
 
         except Exception:
-            _LOGGER.exception("_reconnect error")
+            _LOGGER.exception("Reconnect to %s failed, will retry", self.host)
 
     async def async_first_refresh(self) -> None:
         """Refresh the data for the first time."""

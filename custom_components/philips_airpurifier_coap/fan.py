@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from .config_entry_data import ConfigEntryData
-from .const import DOMAIN
 from .philips import model_to_class
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ async def async_setup_entry(
 ):
     """Set up the fan platform."""
 
-    config_entry_data: ConfigEntryData = hass.data[DOMAIN][entry.entry_id]
+    config_entry_data: ConfigEntryData = entry.runtime_data
 
     model = config_entry_data.device_information.model
 

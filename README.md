@@ -1,61 +1,121 @@
-[![HACS Default][hacs_shield]][hacs]
-[![GitHub Latest Release][releases_shield]][latest_release]
-[![Community Forum][community_forum_shield]][community_forum]
+# Philips AirPurifier (with CoAP)
 
-[hacs_shield]: https://img.shields.io/static/v1.svg?label=HACS&message=Default&style=popout&color=green&labelColor=41bdf5&logo=HomeAssistantCommunityStore&logoColor=white
-[hacs]: https://hacs.xyz/docs/default_repositories
+[![Release](https://img.shields.io/github/v/release/HuisAutomatisering/fix-philips-airpurifier-coap)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/releases/latest)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
+[![HACS validation](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hacs.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hacs.yml)
+[![Hassfest](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hassfest.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/hassfest.yml)
+[![Ruff](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/ruff.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/ruff.yml)
+[![Tests](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml)
+[![Quality scale: Bronze](https://img.shields.io/badge/quality%20scale-Bronze%20(aligned)-cd7f32.svg)](#quality-scale)
+[![License: MIT](https://img.shields.io/github/license/HuisAutomatisering/fix-philips-airpurifier-coap)](LICENSE)
 
-[latest_release]: https://github.com/kongo09/philips-airpurifier-coap/releases/latest
-[releases_shield]: https://img.shields.io/github/release/kongo09/philips-airpurifier-coap.svg?style=popout
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=HuisAutomatisering&repository=fix-philips-airpurifier-coap&category=integration)
 
-[community_forum_shield]: https://img.shields.io/static/v1.svg?label=%20&message=Forum&style=popout&color=41bdf5&logo=HomeAssistant&logoColor=white
-[community_forum]: https://community.home-assistant.io/t/philips-air-purifier/53030
+This is a `Local Push` integration for Philips air purifiers, humidifiers and fan heaters.
+Currently only encrypted CoAP is implemented.
 
-This is a `Local Push` integration for Philips airpurifiers and humidifiers.
-Currently only encrypted-CoAP is implemented.
+## About this fork
 
+This repository is a maintained fork of
+[kongo09/philips-airpurifier-coap](https://github.com/kongo09/philips-airpurifier-coap).
+All device support comes from the original project and its contributors (see [Credits](#credits)).
+This fork adds:
 
-## Word of Caution
+- the `UnitOfDensity` fix for the deprecated `CONCENTRATION_MICROGRAMS_PER_CUBIC_METER` constant
+  (removed in Home Assistant 2027.8)
+- alignment with the Home Assistant quality scale **Bronze** tier (runtime data, config flow
+  tests, setup tests, field descriptions, removal instructions)
+- more robust reconnect handling (timeout on reconnect attempts, errors are logged instead of
+  silently dropped)
+- CI for Ruff, hassfest, HACS validation, tests and CodeQL
 
-Due to a bug in the Philips devices, this integration is rather instable. It might or might not work. Even if it seems ok at first, it might stop working after a while. Sometimes, a power cycle of the Philips device helps. Sometimes, only a power cycle and a Home Assistant restart together help. It is frustrating. Do not report this as an issue here. Nobody can help right now. @mhetzi contributed timer code to attempt reconnects if the device is not responsive. Sometimes, that helps. But not always. You've been warned.
+The integration domain is unchanged (`philips_airpurifier_coap`), so existing devices,
+entities and automations keep working when you switch.
 
-It all goes back to some reverse engineering by @rgerganov and you can read about it here: https://xakcop.com/post/ctrl-air-purifier/
+## Word of caution
 
-Philips has recently introduced a proper API to remote control the devices. However, this only works with the Philips cloud and it is not public (yet?) but only integrates Google Home and Alexa. It used to integrate IFTTT as well, but that seems discontinued.
+The Philips CoAP interface was reverse engineered and the devices are known to stop
+responding now and then. When that happens, the integration tries to reconnect
+automatically; in stubborn cases a power cycle of the Philips device (and sometimes a
+Home Assistant restart) is needed. Using the Philips app at the same time as Home Assistant
+tends to make this worse, because both compete for the same encrypted session.
 
+It all goes back to reverse engineering by @rgerganov, you can read about it here:
+https://xakcop.com/post/ctrl-air-purifier/
 
-## Credits
+Philips also offers a cloud API, but it is not public and only integrates with Google Home
+and Alexa.
 
- - Original reverse engineering done by @rgerganov at https://github.com/rgerganov/py-air-control
- - The base of the current integration has been done by @betaboon at https://github.com/betaboon/philips-airpurifier-coap but apparently this is not maintained anymore.
- - The rework has been done by @Denaun at https://github.com/Denaun/philips-airpurifier-coap
- - Obviously, many other people contributed, notably @mhetzi, @Kraineff and @shexbeer
+## Installation
 
-## Coffee
+This integration is installed through [HACS](https://hacs.xyz) as a custom repository.
 
-<a href="https://www.buymeacoffee.com/kongo09" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+1. Click the **Open in HACS** badge above, or in HACS open the menu (three dots) →
+   **Custom repositories**, add `https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap` with category **Integration**.
+2. Download **Philips AirPurifier (with CoAP)** in HACS.
+3. Restart Home Assistant.
 
-## Install
+### Switching from the original integration
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kongo09&repository=philips-airpurifier-coap&category=integration)
+Both repositories use the same domain, so only one of them can be installed:
+
+1. In HACS, remove the original *Philips AirPurifier (with CoAP)* repository
+   (your config entries stay in Home Assistant).
+2. Add this repository as described above and download it.
+3. Restart Home Assistant. Your devices and entities are picked up again as they were.
 
 ## Configuration
 
-* The integration attempts to autodiscover your purifiers. Autodiscovery is based on the MAC address and original hostname of the devices. Home Assistant will notify you, if that is successful.
-* Alternatively, go to Configuration -> Devices & Services
-* Click `Add Integration`
-* Search for `Philips AirPurifier` and select it
-* Enter the hostname / IP address of your device
-* The model type is detected automatically. You get a warning in the log, if it is not supported.
+* The integration attempts to autodiscover your purifiers. Autodiscovery is based on the MAC
+  address and original hostname of the devices. Home Assistant will notify you if that is
+  successful.
+* Alternatively, go to **Settings** → **Devices & services**
+* Click **Add Integration**
+* Search for **Philips AirPurifier** and select it
+* Enter the hostname or IP address of your device
+* The model type is detected automatically. You get a warning in the log if it is not supported.
 
-Note: `configuration.yaml` is no longer supported and your configuration is not automatically migrated. You have to start fresh.
+Tip: give the device a fixed IP address (DHCP reservation in your router).
+
+Note: `configuration.yaml` is not supported.
 
 ## Re-configuration
 
-- Should your devices change their IP address on the network, they need to be re-configured
-- If autodiscovery works for your device and network, Home Assistant will discover the device again (latest at the next restart) and identify that it knows it already. The IP address is then automatically adjusted and no user interaction is needed.
-- If autodiscovery doesn't work for you, you can simply add the device again as described above, using its new IP address. Home Assistant will detect that it knows the device already and adjust the configuration.
+- If autodiscovery works for your device and network, Home Assistant will rediscover a device
+  with a new IP address and update it automatically.
+- Otherwise, open the integration under **Settings** → **Devices & services**, click
+  **Configure** on the device and enter the new address. The integration checks that the device
+  at that address is the same one.
+- Adding the device again with its new address also works: Home Assistant recognises it and
+  updates the existing entry.
 
+## Removal
+
+1. Go to **Settings** → **Devices & services** → **Philips AirPurifier**.
+2. Open the menu (three dots) of each device entry and select **Delete**.
+3. In HACS, open **Philips AirPurifier (with CoAP)**, open the menu and select **Remove**.
+4. Restart Home Assistant.
+
+## Quality scale
+
+This integration is **aligned with the Home Assistant quality scale: Bronze**.
+Home Assistant only grades core integrations, so this is a self-assessment and not an official
+tier. The status per rule is documented in
+[`quality_scale.yaml`](custom_components/philips_airpurifier_coap/quality_scale.yaml).
+
+## Credits
+
+- Original reverse engineering by @rgerganov: https://github.com/rgerganov/py-air-control
+- The base of the integration by @betaboon: https://github.com/betaboon/philips-airpurifier-coap
+- The rework by @Denaun: https://github.com/Denaun/philips-airpurifier-coap
+- The current upstream integration and the `aioairctrl` library by @kongo09:
+  https://github.com/kongo09/philips-airpurifier-coap - if this integration is useful to you,
+  consider [buying kongo09 a coffee](https://www.buymeacoffee.com/kongo09)
+- Many other contributors, notably @mhetzi, @Kraineff and @shexbeer
+- Icon loading code by @thomasloven
+
+The icon in `Brand/` is a generic drawing and not the Philips logo.
 
 ## Supported models
 

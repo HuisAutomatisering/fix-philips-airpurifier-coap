@@ -3,25 +3,25 @@
 from __future__ import annotations
 
 import asyncio
-import json
-import logging
 from functools import partial
 from ipaddress import IPv6Address, ip_address
+import json
+import logging
 from os import walk
 from pathlib import Path
 
 from aioairctrl import CoAPClient
 from getmac import get_mac_address
+
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.http import HomeAssistantView
 
-from .config_entry_data import ConfigEntryData
+from .config_entry_data import ConfigEntryData, PhilipsConfigEntry
 from .const import (
     CONF_DEVICE_ID,
     CONF_MODEL,
@@ -94,12 +94,16 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     """Set up the icons for the Philips AirPurifier integration."""
     _LOGGER.debug("async_setup called")
 
-    await hass.http.async_register_static_paths([StaticPathConfig(LOADER_URL, hass.config.path(LOADER_PATH), True)])
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(LOADER_URL, hass.config.path(LOADER_PATH), True)]
+    )
     add_extra_js_url(hass, LOADER_URL)
 
     iset = PAP
     iconpath = hass.config.path(ICONS_PATH + "/" + iset)
-    await hass.http.async_register_static_paths([StaticPathConfig(ICONS_URL + "/" + iset, iconpath, True)])
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(ICONS_URL + "/" + iset, iconpath, True)]
+    )
     hass.http.register_view(ListingView(ICONLIST_URL + "/" + iset, iconpath, hass))
 
     return True
@@ -121,7 +125,9 @@ async def async_get_mac_address_from_host(hass: HomeAssistant, host: str) -> str
             mac_address = await hass.async_add_executor_job(partial(get_mac_address, ip=host))
         else:
             ip_addr = IPv6Address(int(ip_addr))
-            mac_address = await hass.async_add_executor_job(partial(get_mac_address, ip6=str(ip_addr)))
+            mac_address = await hass.async_add_executor_job(
+                partial(get_mac_address, ip6=str(ip_addr))
+            )
     if not mac_address:
         return None
 
@@ -133,7 +139,7 @@ async def async_get_mac_address_from_host(hass: HomeAssistant, host: str) -> str
     return normalized_mac
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: PhilipsConfigEntry) -> bool:
     """Set up the Philips AirPurifier integration."""
 
     host = entry.options.get(CONF_HOST, entry.data[CONF_HOST])
@@ -149,16 +155,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.debug("got a valid client for host %s", host)
 
     except Exception as ex:
-        _LOGGER.warning(r"Failed to connect to host %s: %s", host, ex)
-        raise ConfigEntryNotReady from ex
+        _LOGGER.warning("Failed to connect to host %s: %s", host, ex)
+        raise ConfigEntryNotReady(f"Cannot connect to {host}: {ex}") from ex
 
-    device_information = DeviceInformation(host=host, mac=mac, model=model, name=name, device_id=device_id)
+    device_information = DeviceInformation(
+        host=host, mac=mac, model=model, name=name, device_id=device_id
+    )
 
     # check if we have status data, it will be missing in old entries
     if CONF_STATUS not in entry.data:
         _LOGGER.warning("No status data found for model %s, trying to fetch it", model)
         coordinator = Coordinator(hass, client, host, None)
-        await coordinator.async_first_refresh()
+        try:
+            await coordinator.async_first_refresh()
+        except ConfigEntryNotReady:
+            # release the client and the reconnect timer before Home Assistant retries
+            await coordinator.shutdown()
+            raise
         status = coordinator.status
 
         # update the entry with the status data
@@ -170,14 +183,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         status = entry.data[CONF_STATUS]
         coordinator = Coordinator(hass, client, host, status)
 
-    # store the data in the hass.data
-    config_entry_data = ConfigEntryData(
+    # store the runtime data on the config entry
+    entry.runtime_data = ConfigEntryData(
         device_information=device_information,
         coordinator=coordinator,
         latest_status=status,
         client=client,
     )
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = config_entry_data
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -186,20 +198,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _async_update_listener(hass: HomeAssistant, entry: PhilipsConfigEntry) -> None:
     """Reload the config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_unload_entry(hass: HomeAssistant, entry: PhilipsConfigEntry) -> bool:
     """Unload a config entry."""
 
-    for p in PLATFORMS:
-        await hass.config_entries.async_forward_entry_unload(entry, p)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        await entry.runtime_data.coordinator.shutdown()
 
-    config_entry_data: ConfigEntryData = hass.data[DOMAIN][entry.entry_id]
-    await config_entry_data.coordinator.shutdown()
-
-    hass.data[DOMAIN].pop(entry.entry_id)
-
-    return True
+    return unload_ok

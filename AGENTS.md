@@ -19,9 +19,12 @@ API generations.
 custom_components/philips_airpurifier_coap/
 ├── __init__.py           # Entry setup/unload, icon serving, MAC detection
 ├── config_flow.py        # Config flow with DHCP discovery + options flow
-├── config_entry_data.py  # ConfigEntryData dataclass
-├── coordinator.py        # DataUpdateCoordinator with push-based updates
-├── philips.py            # Base entity classes + 50+ device-specific fan classes
+├── config_entry_data.py  # ConfigEntryData dataclass + PhilipsConfigEntry type
+├── coordinator.py        # Push-based coordinator (CoAP observe + reconnect timer)
+├── entity.py             # PhilipsEntity base class
+├── quality_scale.yaml    # Bronze self-assessment
+├── brand/                # Generic integration icon
+├── philips.py            # Control base classes + 50+ device-specific fan classes
 ├── model.py              # DeviceInformation, DeviceStatus, TypedDict descriptors
 ├── helpers.py            # extract_name(), extract_model()
 ├── const.py              # DOMAIN, enums, API mappings, entity type dicts
@@ -56,7 +59,7 @@ Each generation has its own `PhilipsApi` field mappings in `const.py`.
 ### Class Hierarchy (philips.py)
 
 ```
-PhilipsEntity (base — coordinator access, availability, device_info)
+PhilipsEntity (entity.py — coordinator access, availability, device_info)
 ├── PhilipsGenericControlBase (set values via CoAP client)
 │   ├── PhilipsGenericFanBase (speed/preset management)
 │   │   ├── PhilipsGenericFan (original API)
@@ -141,7 +144,7 @@ python -m pytest tests/ -x -q
 
 Follow [Home Assistant code style](https://developers.home-assistant.io/docs/development_guidelines):
 
-- Use `ruff` for linting and formatting (replaces black, flake8, isort)
+- Use `ruff` for linting and formatting (config in `ruff.toml`)
 - Line length: 100
 - Target: Python 3.13
 - Type hints on all public functions

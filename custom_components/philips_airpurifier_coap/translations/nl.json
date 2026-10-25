@@ -1,16 +1,21 @@
 {
   "title": "Philips Luchtreiniger",
   "config": {
+    "flow_title": "{name}",
     "abort": {
       "already_configured": "Apparaat is al geconfigureerd",
       "model_unsupported": "Model wordt niet ondersteund",
-      "timeout": "Time-out, kan geen verbinding maken met het apparaat"
+      "timeout": "Time-out, kan geen verbinding maken met het apparaat",
+      "cannot_connect": "Kan geen verbinding maken met het apparaat"
     },
     "step": {
       "user": {
         "title": "Nieuwe Philips luchtreiniger",
         "data": {
           "host": "Hostnaam of IP-adres van apparaat"
+        },
+        "data_description": {
+          "host": "Hostnaam of IP-adres van het Philips-apparaat in je lokale netwerk. Een vast IP-adres (DHCP-reservering) wordt aanbevolen."
         }
       },
       "confirm": {
@@ -18,8 +23,28 @@
       }
     },
     "error": {
-      "host": "Apparaatadres is vereist",
-      "connect": "Kan geen verbinding maken met het apparaat"
+      "host": "Ongeldige hostnaam of ongeldig IP-adres",
+      "connect": "Kan geen verbinding maken met het apparaat",
+      "timeout": "Time-out, het apparaat reageert niet"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Philips luchtreiniger opnieuw configureren",
+        "data": {
+          "host": "Hostnaam of IP-adres van apparaat"
+        },
+        "data_description": {
+          "host": "Nieuwe hostnaam of nieuw IP-adres van hetzelfde Philips-apparaat."
+        }
+      }
+    },
+    "error": {
+      "host": "Ongeldige hostnaam of ongeldig IP-adres",
+      "connect": "Kan geen verbinding maken met het apparaat",
+      "timeout": "Time-out, het apparaat reageert niet",
+      "different_device": "Het apparaat op dit adres is niet hetzelfde als het geconfigureerde apparaat"
     }
   },
   "entity": {

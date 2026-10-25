@@ -5,9 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, ClassVar, cast
 
-from homeassistant.components.climate import (
-    ClimateEntity,
-)
+from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     SWING_OFF,
     SWING_ON,
@@ -22,14 +20,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .config_entry_data import ConfigEntryData
-from .const import (
-    DOMAIN,
-    HEATER_TYPES,
-    SWITCH_OFF,
-    SWITCH_ON,
-    FanAttributes,
-    PresetMode,
-)
+from .const import HEATER_TYPES, SWITCH_OFF, SWITCH_ON, FanAttributes, PresetMode
 from .model import DeviceStatus
 from .philips import PhilipsGenericControlBase, model_to_class
 
@@ -43,7 +34,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the climate platform."""
 
-    config_entry_data: ConfigEntryData = hass.data[DOMAIN][entry.entry_id]
+    config_entry_data: ConfigEntryData = entry.runtime_data
 
     model = config_entry_data.device_information.model
 
@@ -143,7 +134,9 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
         self._attr_min_temp = self._description[FanAttributes.MIN_TEMPERATURE]
         self._attr_max_temp = self._description[FanAttributes.MAX_TEMPERATURE]
         self._attr_target_temperature = latest_status.get(self._temperature_target_key)
-        self._attr_current_temperature = latest_status.get(self._description[FanAttributes.TEMPERATURE])
+        self._attr_current_temperature = latest_status.get(
+            self._description[FanAttributes.TEMPERATURE]
+        )
 
         self._attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE
@@ -250,7 +243,11 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
         if not self._attr_swing_modes or swing_mode not in self._attr_swing_modes:
             return
 
-        value = self._oscillation_modes[SWITCH_ON] if swing_mode == SWING_ON else self._oscillation_modes[SWITCH_OFF]
+        value = (
+            self._oscillation_modes[SWITCH_ON]
+            if swing_mode == SWING_ON
+            else self._oscillation_modes[SWITCH_OFF]
+        )
 
         await self.coordinator.client.set_control_value(self._oscillation_key, value)
         self._device_status[self._oscillation_key] = value

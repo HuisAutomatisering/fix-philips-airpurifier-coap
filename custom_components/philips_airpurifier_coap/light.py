@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any
 
 from homeassistant.components.light import (
@@ -22,7 +22,6 @@ from homeassistant.helpers.entity import Entity
 from .config_entry_data import ConfigEntryData
 from .const import (
     DIMMABLE,
-    DOMAIN,
     LIGHT_TYPES,
     SWITCH_AUTO,
     SWITCH_MEDIUM,
@@ -30,7 +29,8 @@ from .const import (
     SWITCH_ON,
     FanAttributes,
 )
-from .philips import PhilipsEntity, model_to_class
+from .entity import PhilipsEntity
+from .philips import model_to_class
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the light platform."""
 
-    config_entry_data: ConfigEntryData = hass.data[DOMAIN][entry.entry_id]
+    config_entry_data: ConfigEntryData = entry.runtime_data
 
     model = config_entry_data.device_information.model
 
@@ -55,7 +55,9 @@ async def async_setup_entry(
             available_lights.extend(cls_available_lights)
 
         lights = [
-            PhilipsLight(hass, entry, config_entry_data, light) for light in LIGHT_TYPES if light in available_lights
+            PhilipsLight(hass, entry, config_entry_data, light)
+            for light in LIGHT_TYPES
+            if light in available_lights
         ]
 
         async_add_entities(lights, update_before_add=False)

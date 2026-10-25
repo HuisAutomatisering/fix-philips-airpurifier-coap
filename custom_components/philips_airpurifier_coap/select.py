@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any
 
 from homeassistant.components.select import SelectEntity
@@ -13,8 +13,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 
 from .config_entry_data import ConfigEntryData
-from .const import DOMAIN, OPTIONS, SELECT_TYPES, FanAttributes
-from .philips import PhilipsEntity, model_to_class
+from .const import OPTIONS, SELECT_TYPES, FanAttributes
+from .entity import PhilipsEntity
+from .philips import model_to_class
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the select platform."""
 
-    config_entry_data: ConfigEntryData = hass.data[DOMAIN][entry.entry_id]
+    config_entry_data: ConfigEntryData = entry.runtime_data
 
     model = config_entry_data.device_information.model
 

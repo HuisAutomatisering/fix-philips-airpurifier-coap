@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from datetime import timedelta
+import logging
 from typing import Any, cast
 
 from homeassistant.components.sensor import ATTR_STATE_CLASS, SensorEntity, SensorStateClass
@@ -22,15 +22,9 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import StateType
 
 from .config_entry_data import ConfigEntryData
-from .const import (
-    DOMAIN,
-    EXTRA_SENSOR_TYPES,
-    FILTER_TYPES,
-    SENSOR_TYPES,
-    FanAttributes,
-    PhilipsApi,
-)
-from .philips import PhilipsEntity, model_to_class
+from .const import EXTRA_SENSOR_TYPES, FILTER_TYPES, SENSOR_TYPES, FanAttributes, PhilipsApi
+from .entity import PhilipsEntity
+from .philips import model_to_class
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +36,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up platform for sensor."""
 
-    config_entry_data: ConfigEntryData = hass.data[DOMAIN][entry.entry_id]
+    config_entry_data: ConfigEntryData = entry.runtime_data
 
     model = config_entry_data.device_information.model
     status = config_entry_data.latest_status
@@ -105,7 +99,9 @@ class PhilipsSensor(PhilipsEntity, SensorEntity):
             self._description = EXTRA_SENSOR_TYPES[kind]
 
         self._icon_map = self._description.get(FanAttributes.ICON_MAP)
-        self._norm_icon = next(iter(self._icon_map.items()))[1] if self._icon_map is not None else None
+        self._norm_icon = (
+            next(iter(self._icon_map.items()))[1] if self._icon_map is not None else None
+        )
         self._attr_state_class = self._description.get(ATTR_STATE_CLASS)
         self._attr_device_class = self._description.get(ATTR_DEVICE_CLASS)
         self._attr_entity_category = self._description.get(CONF_ENTITY_CATEGORY)
@@ -163,7 +159,9 @@ class PhilipsFilterSensor(PhilipsEntity, SensorEntity):
 
         self._description = FILTER_TYPES[kind]
         self._icon_map = self._description.get(FanAttributes.ICON_MAP)
-        self._norm_icon = next(iter(self._icon_map.items()))[1] if self._icon_map is not None else None
+        self._norm_icon = (
+            next(iter(self._icon_map.items()))[1] if self._icon_map is not None else None
+        )
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
         self._attr_state_class = SensorStateClass.MEASUREMENT
 
@@ -179,7 +177,9 @@ class PhilipsFilterSensor(PhilipsEntity, SensorEntity):
 
         try:
             device_id = self._device_status[PhilipsApi.DEVICE_ID]
-            self._attr_unique_id = f"{self._model}-{device_id}-{self._description[FanAttributes.LABEL]}"
+            self._attr_unique_id = (
+                f"{self._model}-{device_id}-{self._description[FanAttributes.LABEL]}"
+            )
         except KeyError as e:
             _LOGGER.exception("Failed retrieving unique_id due to missing key")
             raise PlatformNotReady from e

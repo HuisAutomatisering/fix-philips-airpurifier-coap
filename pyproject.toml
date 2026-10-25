@@ -1,18 +1,6 @@
 [project]
 name = "philips-airpurifier-coap"
-version = "0.25.0"
+version = "0.26.0"
 description = "Home Assistant custom integration for Philips air purifiers over CoAP"
 license = "MIT"
 requires-python = ">=3.13"
-
-[tool.ruff]
-target-version = "py313"
-line-length = 120
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "C4", "TRY", "PERF"]
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-pythonpath = ["."]
