@@ -16,7 +16,7 @@ Currently only encrypted CoAP is implemented.
 
 ## About this fork
 
-This repository is a maintained fork of
+This repository is a one-time-upgraded (not maintaned) fork of
 [kongo09/philips-airpurifier-coap](https://github.com/kongo09/philips-airpurifier-coap).
 All device support comes from the original project and its contributors (see [Credits](#credits)).
 This fork adds:
