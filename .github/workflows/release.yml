@@ -1,0 +1,51 @@
+name: Release
+
+# Builds the integration zip that HACS installs, signs it with a SLSA build
+# provenance attestation and attaches both to the GitHub release.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build, attest and upload
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # upload the release assets
+      id-token: write # sign the attestation (Sigstore)
+      attestations: write # store the attestation
+    env:
+      ZIP: philips_airpurifier_local.zip
+      COMPONENT: custom_components/philips_airpurifier_local
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check manifest version matches the release tag
+        run: |
+          version="$(jq -r .version "$COMPONENT/manifest.json")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ] && [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::manifest.json version $version does not match release tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+      - name: Build zip
+        run: |
+          mkdir -p dist
+          (cd "$COMPONENT" && zip -r -X "$GITHUB_WORKSPACE/dist/$ZIP" . -x '*/__pycache__/*' '*.pyc')
+          sha256sum "dist/$ZIP"
+      - name: Attest build provenance
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/${{ env.ZIP }}
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "$BUNDLE" "dist/$ZIP.intoto.jsonl"
+          gh release upload "$GITHUB_REF_NAME" "dist/$ZIP" "dist/$ZIP.intoto.jsonl" \
+            --repo "$GITHUB_REPOSITORY" --clobber
