@@ -1,0 +1,6 @@
+[project]
+name = "philips-airpurifier-local"
+version = "0.39.2"
+description = "Home Assistant custom integration for Philips air purifiers over CoAP"
+license = "MIT"
+requires-python = ">=3.13"

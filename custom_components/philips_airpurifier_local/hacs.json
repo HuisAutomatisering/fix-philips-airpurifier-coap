@@ -1,0 +1,7 @@
+{
+    "name": "Philips AirPurifier Local (CoAP)",
+    "render_readme": true,
+    "homeassistant": "2025.2.0",
+    "zip_release": true,
+    "filename": "philips_airpurifier_local.zip"
+}
