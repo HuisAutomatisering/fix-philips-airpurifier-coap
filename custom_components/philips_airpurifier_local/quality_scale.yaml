@@ -11,7 +11,7 @@ rules:
     comment: Local push integration, the device pushes status updates over CoAP observe.
   brands:
     status: done
-    comment: Icon and logo come from the home-assistant/brands repository.
+    comment: Generic icon in brand/ (the domain is not in the home-assistant/brands repository).
   common-modules:
     status: done
     comment: Coordinator in coordinator.py, base entity in entity.py.

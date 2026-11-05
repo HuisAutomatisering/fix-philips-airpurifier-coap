@@ -7,6 +7,7 @@
 [![Ruff](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/ruff.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/ruff.yml)
 [![Tests](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml)
+[![Fuzz](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/fuzz.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/fuzz.yml)
 [![Quality scale: Bronze](https://img.shields.io/badge/quality%20scale-Bronze%20(aligned)-cd7f32.svg)](#quality-scale)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/HuisAutomatisering/fix-philips-airpurifier-coap/badge)](https://scorecard.dev/viewer/?uri=github.com/HuisAutomatisering/fix-philips-airpurifier-coap)
 
@@ -27,7 +28,8 @@ This fork adds:
 - alignment with the Home Assistant quality scale **Bronze** tier
 - hardening against a misbehaving device: bounded reconnect watchdog, growing pause between
   failed reconnects, one command at a time with a timeout, unusable values shown as unknown
-  instead of errors (covered by property-based fuzz tests)
+  instead of errors (covered by property-based Hypothesis tests and coverage-guided Atheris
+  fuzzing)
 - privacy: device id, product id and name are redacted in the debug log and the id attributes are
   kept out of the recorder history
 - signed releases: HACS installs a zip with a SLSA build provenance attestation
@@ -152,6 +154,8 @@ not contain a license file yet and the upstream code remains copyright of its au
   consider [buying kongo09 a coffee](https://www.buymeacoffee.com/kongo09)
 - Many other contributors, notably @mhetzi, @Kraineff and @shexbeer
 - Icon loading code by @thomasloven
+
+The integration icon in `brand/` is a generic drawing, not the Philips logo.
 
 ## Supported models
 

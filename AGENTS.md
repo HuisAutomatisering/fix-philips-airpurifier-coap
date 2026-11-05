@@ -137,6 +137,13 @@ ruff format --check custom_components/ tests/
 python -m pytest tests/ -x -q
 ```
 
+### Fuzzing
+
+```bash
+pip install atheris
+PYTHONPATH=. python fuzz/fuzz_device_data.py -max_total_time=60
+```
+
 ### Coverage target
 
 90%+ (to be established)
