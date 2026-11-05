@@ -95,7 +95,6 @@ class PhilipsSelect(PhilipsEntity, SelectEntity):
             current_option = str(self._options.get(option))
         except TypeError:  # unhashable value from the device
             return None
-        _LOGGER.debug("option: %s, returning as current_option: %s", option, current_option)
         return current_option
 
     async def async_select_option(self, option: str) -> None:

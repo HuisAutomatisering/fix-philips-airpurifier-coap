@@ -25,6 +25,7 @@ class Timer:
         self._timeout = timeout
         self._callback = callback
         self._task = None
+        self._logged_timeout = None
 
         if autostart:
             self.start()
@@ -33,14 +34,18 @@ class Timer:
         while True:
             try:
                 self._in_callback = False
-                _LOGGER.debug("Starting Timer %ss", self._timeout)
+                if self._timeout != self._logged_timeout:
+                    # routine restarts after every status push are not logged
+                    _LOGGER.debug("Starting Timer %ss", self._timeout)
+                    self._logged_timeout = self._timeout
                 await asyncio.sleep(self._timeout)
                 self._in_callback = True
                 _LOGGER.debug("Calling timeout callback")
                 await self._callback()
                 _LOGGER.debug("Timeout callback finished!")
             except asyncio.exceptions.CancelledError as e:
-                _LOGGER.debug("Timer cancelled: %s", e.args)
+                if e.args != ("RESET",):
+                    _LOGGER.debug("Timer cancelled: %s", e.args)
                 break
             except RuntimeError:
                 try:

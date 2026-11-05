@@ -156,7 +156,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: PhilipsConfigEntry) -> b
         _LOGGER.debug("got a valid client for host %s", host)
 
     except Exception as ex:
-        _LOGGER.warning("Failed to connect to host %s: %s", host, ex)
+        # Home Assistant itself logs that the entry is retried; keep the details at debug
+        _LOGGER.debug("Failed to connect to host %s: %s", host, ex)
         raise ConfigEntryNotReady(f"Cannot connect to {host}: {ex}") from ex
 
     device_information = DeviceInformation(

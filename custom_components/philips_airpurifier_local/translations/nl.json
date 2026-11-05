@@ -5,8 +5,9 @@
     "abort": {
       "already_configured": "Apparaat is al geconfigureerd",
       "model_unsupported": "Model wordt niet ondersteund",
-      "timeout": "Time-out, kan geen verbinding maken met het apparaat",
-      "cannot_connect": "Kan geen verbinding maken met het apparaat"
+      "timeout": "Het apparaat reageert nog niet. Philips-apparaten hebben na een herstart van Home Assistant of na het verwijderen van de integratie soms tot 3 minuten nodig. Probeer het over een paar minuten opnieuw.",
+      "cannot_connect": "Kan geen verbinding maken met het apparaat",
+      "already_in_progress": "Dit apparaat wordt al ingesteld"
     },
     "step": {
       "user": {
@@ -25,7 +26,7 @@
     "error": {
       "host": "Ongeldige hostnaam of ongeldig IP-adres",
       "connect": "Kan geen verbinding maken met het apparaat",
-      "timeout": "Time-out, het apparaat reageert niet"
+      "timeout": "Het apparaat reageert nog niet. Philips-apparaten hebben na een herstart van Home Assistant of na het verwijderen van de integratie soms tot 3 minuten nodig. Probeer het over een paar minuten opnieuw."
     }
   },
   "options": {
@@ -43,7 +44,7 @@
     "error": {
       "host": "Ongeldige hostnaam of ongeldig IP-adres",
       "connect": "Kan geen verbinding maken met het apparaat",
-      "timeout": "Time-out, het apparaat reageert niet",
+      "timeout": "Het apparaat reageert nog niet. Philips-apparaten hebben na een herstart van Home Assistant of na het verwijderen van de integratie soms tot 3 minuten nodig. Probeer het over een paar minuten opnieuw.",
       "different_device": "Het apparaat op dit adres is niet hetzelfde als het geconfigureerde apparaat"
     }
   },

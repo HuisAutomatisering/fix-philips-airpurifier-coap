@@ -95,7 +95,8 @@ LOADER_URL = f"/{DOMAIN}/main.js"
 LOADER_PATH = f"custom_components/{DOMAIN}/main.js"
 ICONS_URL = f"/{DOMAIN}/icons"
 ICONLIST_URL = f"/{DOMAIN}/list"
-ICONS_PATH = f"custom_components/{DOMAIN}/icons"
+# not named "icons": the Samba add-on hides "icon?" names by default (macOS Icon files)
+ICONS_PATH = f"custom_components/{DOMAIN}/pap_icons"
 
 PAP = "pap"
 ICONS = "icons"

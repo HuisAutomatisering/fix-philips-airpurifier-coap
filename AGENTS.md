@@ -40,7 +40,7 @@ custom_components/philips_airpurifier_local/
 ├── switch.py             # Child lock, beep, standby sensors
 ├── manifest.json         # Integration metadata
 ├── strings.json          # English translation strings
-├── icons/                # Custom PAP icons (static served via HTTP)
+├── pap_icons/            # Custom PAP icons (not "icons": Samba hides icon? names)
 └── translations/         # Translation files
 ```
 
@@ -95,7 +95,7 @@ Platform `async_setup_entry` functions:
 
 ### Custom Icons
 
-Custom PAP icons are served via HTTP at `/api/philips_airpurifier_local/icons/`.
+Custom PAP icons are served via HTTP at `/philips_airpurifier_local/icons/`.
 The `ICON` enum maps icon names to filenames.
 
 ## Key Patterns

@@ -11,11 +11,11 @@ from typing import Any
 from aioairctrl import CoAPClient
 import voluptuous as vol
 
-from homeassistant import config_entries, exceptions
-from homeassistant.config_entries import ConfigFlowResult
+from homeassistant import config_entries, data_entry_flow, exceptions
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_NAME
-from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
 from .const import CONF_DEVICE_ID, CONF_MODEL, CONF_STATUS, DOMAIN, PhilipsApi
@@ -26,6 +26,8 @@ _LOGGER = logging.getLogger(__name__)
 
 # seconds to wait for the CoAP handshake and for the first status message
 CONNECT_TIMEOUT = 30
+# hass.data key for the per-host connection locks of the config flows
+CONNECT_LOCKS = f"{DOMAIN}_connect_locks"
 
 
 class CannotConnect(exceptions.HomeAssistantError):
@@ -45,38 +47,49 @@ def host_valid(host: str) -> bool:
     return all(x and not disallowed.search(x) for x in host.split("."))
 
 
-async def async_fetch_status(host: str) -> dict[str, Any]:
+def _connect_lock(hass: HomeAssistant, host: str) -> asyncio.Lock:
+    """Return the lock that allows only one setup connection per device at a time."""
+    locks: dict[str, asyncio.Lock] = hass.data.setdefault(CONNECT_LOCKS, {})
+    return locks.setdefault(host, asyncio.Lock())
+
+
+async def async_fetch_status(hass: HomeAssistant, host: str) -> dict[str, Any]:
     """Connect to the device and return its current status.
+
+    Only one connection per device at a time: Philips devices get confused by
+    parallel sessions (for example DHCP discovery and a manual setup).
+    Problems are logged at debug level only, the user sees them in the form.
 
     Raises TimeoutError when the device does not answer in time and
     CannotConnect for any other connection problem.
     """
-    client: CoAPClient | None = None
-    try:
-        async with asyncio.timeout(CONNECT_TIMEOUT):
-            client = await CoAPClient.create(coap_host(host))
-            _LOGGER.debug("got a valid client for host %s", host)
+    async with _connect_lock(hass, host):
+        client: CoAPClient | None = None
+        try:
+            async with asyncio.timeout(CONNECT_TIMEOUT):
+                client = await CoAPClient.create(coap_host(host))
+                _LOGGER.debug("got a valid client for host %s", host)
 
-        async with asyncio.timeout(CONNECT_TIMEOUT):
-            status, _ = await client.get_status()
-            _LOGGER.debug("got status for host %s: %s", host, redact_status(status))
+            async with asyncio.timeout(CONNECT_TIMEOUT):
+                status, _ = await client.get_status()
+                _LOGGER.debug("got status for host %s: %s", host, redact_status(status))
 
-    except TimeoutError:
-        _LOGGER.warning("Timeout, host %s doesn't answer", host)
-        raise
-    except Exception as ex:  # aioairctrl/aiocoap raise many different error types
-        _LOGGER.warning("Failed to connect to host %s: %s", host, ex)
-        raise CannotConnect(str(ex)) from ex
-    finally:
-        if client is not None:
-            try:
-                await client.shutdown()
-            # closing a half-open client must not hide the real result; logged, not raised
-            except Exception as ex:  # noqa: BLE001
-                _LOGGER.debug("Error while closing client for host %s: %s", host, ex)
+        except TimeoutError:
+            _LOGGER.debug("Timeout, host %s doesn't answer (yet)", host)
+            raise
+        except Exception as ex:  # aioairctrl/aiocoap raise many different error types
+            _LOGGER.debug("Failed to connect to host %s: %s", host, ex)
+            raise CannotConnect(str(ex)) from ex
+        finally:
+            if client is not None:
+                try:
+                    await client.shutdown()
+                # closing a half-open client must not hide the real result; logged, not raised
+                except Exception as ex:  # noqa: BLE001
+                    _LOGGER.debug("Error while closing client for host %s: %s", host, ex)
 
     if not isinstance(status, dict):
-        _LOGGER.warning("Unexpected status format from host %s", host)
+        _LOGGER.debug("Unexpected status format from host %s", host)
         raise CannotConnect("unexpected status format")
     return status
 
@@ -90,7 +103,7 @@ def resolve_model(status: dict[str, Any]) -> str | None:
 
     for candidate in (model, model_long, model_family):
         if candidate and candidate in model_to_class:
-            _LOGGER.info("Model %s supported", candidate)
+            _LOGGER.debug("Model %s supported", candidate)
             return candidate
 
     _LOGGER.warning("Model %s of family %s not supported", model, model_family)
@@ -124,8 +137,22 @@ class PhilipsAirPurifierConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         host = discovery_info.ip
 
+        # A configured device is recognised without connecting to it: DHCP renewals
+        # would otherwise open a second session next to the running integration.
+        self._async_abort_entries_match({CONF_HOST: host})
+        mac = dr.format_mac(discovery_info.macaddress)
+        device = dr.async_get(self.hass).async_get_device(
+            connections={(dr.CONNECTION_NETWORK_MAC, mac)}
+        )
+        if device is not None:
+            for entry_id in device.config_entries:
+                entry = self.hass.config_entries.async_get_entry(entry_id)
+                if entry is not None and entry.domain == DOMAIN:
+                    self._async_update_host(entry, host)
+                    return self.async_abort(reason="already_configured")
+
         try:
-            status = await async_fetch_status(host)
+            status = await async_fetch_status(self.hass, host)
         except TimeoutError:
             return self.async_abort(reason="timeout")
         except CannotConnect:
@@ -137,7 +164,7 @@ class PhilipsAirPurifierConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # use the device ID as unique_id, update the host if we know the device already
         await self.async_set_unique_id(device_id)
-        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+        self._abort_if_known_device(host)
 
         model = resolve_model(status)
         if model is None:
@@ -185,8 +212,10 @@ class PhilipsAirPurifierConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not host_valid(host):
                 errors[CONF_HOST] = "host"
             else:
+                # already configured at this address: no need to disturb the device
+                self._async_abort_entries_match({CONF_HOST: host})
                 try:
-                    status = await async_fetch_status(host)
+                    status = await async_fetch_status(self.hass, host)
                 except TimeoutError:
                     errors[CONF_HOST] = "timeout"
                 except CannotConnect:
@@ -210,7 +239,7 @@ class PhilipsAirPurifierConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="model_unsupported")
 
         await self.async_set_unique_id(device_id)
-        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+        self._abort_if_known_device(host)
 
         model = resolve_model(status)
         if model is None:
@@ -228,6 +257,38 @@ class PhilipsAirPurifierConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
+    def _abort_if_known_device(self, host: str) -> None:
+        """Abort if the device (unique id) is configured already, storing its new host.
+
+        Like _abort_if_unique_id_configured, but also updates a host that was
+        changed through the options flow (stored in the entry options).
+        """
+        entry = self.hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, self.unique_id)
+        if entry is None:
+            return
+        if entry.source == config_entries.SOURCE_IGNORE:
+            if self.source == config_entries.SOURCE_USER:
+                return  # the user may still set up a device that was ignored earlier
+            raise data_entry_flow.AbortFlow("already_configured")
+        self._async_update_host(entry, host)
+        raise data_entry_flow.AbortFlow("already_configured")
+
+    @callback
+    def _async_update_host(self, entry: ConfigEntry, host: str) -> None:
+        """Store a new host for a configured device and reload it when needed."""
+        if entry.options.get(CONF_HOST, entry.data.get(CONF_HOST)) == host:
+            return
+        _LOGGER.debug("Updating host of configured device to %s", host)
+        if CONF_HOST in entry.options:
+            # an options change reloads a loaded entry through its update listener
+            self.hass.config_entries.async_update_entry(
+                entry, options={**entry.options, CONF_HOST: host}
+            )
+            return
+        self.hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_HOST: host})
+        if entry.state in (ConfigEntryState.LOADED, ConfigEntryState.SETUP_RETRY):
+            self.hass.config_entries.async_schedule_reload(entry.entry_id)
+
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for Philips AirPurifier."""
@@ -243,7 +304,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 errors[CONF_HOST] = "host"
             else:
                 try:
-                    status = await async_fetch_status(new_host)
+                    status = await async_fetch_status(self.hass, new_host)
                 except TimeoutError:
                     errors[CONF_HOST] = "timeout"
                 except CannotConnect:
@@ -252,12 +313,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     expected = self.config_entry.data[CONF_DEVICE_ID]
                     device_id = status.get(PhilipsApi.DEVICE_ID)
                     if device_id != expected:
-                        _LOGGER.warning(
-                            "Device at %s has id %s, does not match configured device %s",
-                            new_host,
-                            device_id,
-                            expected,
-                        )
+                        _LOGGER.debug("Device at %s is not the configured device", new_host)
                         errors[CONF_HOST] = "different_device"
                     else:
                         return self.async_create_entry(title="", data={CONF_HOST: new_host})

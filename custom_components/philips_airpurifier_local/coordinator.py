@@ -54,6 +54,8 @@ class Coordinator:
         self._reconnect_task: Task | None = None
         self._timeout: int = DEFAULT_MAX_AGE
         self._failures = 0
+        # a lost connection is logged once as a warning, repeats only at debug level
+        self._connection_lost_logged = False
 
         self._command_lock = asyncio.Lock()
         self._last_command = 0.0
@@ -73,6 +75,25 @@ class Coordinator:
     def _retry_delay(self) -> int:
         """Seconds until the next reconnect attempt, growing with each failure."""
         return min(self._watchdog * 2**self._failures, max(self._watchdog, BACKOFF_MAX))
+
+    def _log_reconnect_failure(self, reason: str, error: BaseException | None = None) -> None:
+        """Log a failed reconnect: once as a warning, repeats only at debug level."""
+        if not self._connection_lost_logged:
+            self._connection_lost_logged = True
+            _LOGGER.warning(
+                "Lost connection to Philips device at %s (%s), reconnecting in the background",
+                self.host,
+                reason,
+            )
+        else:
+            _LOGGER.debug(
+                "Reconnect to %s failed (%s), next attempt in %ss",
+                self.host,
+                reason,
+                self._retry_delay(),
+            )
+        if error is not None:
+            _LOGGER.debug("Reconnect error details for %s", self.host, exc_info=error)
 
     async def shutdown(self):
         """Shutdown the API connection."""
@@ -126,17 +147,11 @@ class Coordinator:
             _LOGGER.debug("Reconnect attempt for %s was cancelled", self.host)
 
         except TimeoutError:
-            _LOGGER.warning(
-                "Reconnect to %s timed out after %ss, next attempt in %ss",
-                self.host,
-                RECONNECT_TIMEOUT,
-                self._retry_delay(),
-            )
+            self._log_reconnect_failure(f"no answer within {RECONNECT_TIMEOUT}s")
 
-        except Exception:
-            _LOGGER.exception(
-                "Reconnect to %s failed, next attempt in %ss", self.host, self._retry_delay()
-            )
+        # logged (once as warning), the timer retries
+        except Exception as ex:  # noqa: BLE001
+            self._log_reconnect_failure(str(ex) or type(ex).__name__, ex)
 
     async def async_first_refresh(self) -> None:
         """Refresh the data for the first time."""
@@ -152,8 +167,9 @@ class Coordinator:
             _LOGGER.debug("finished first refresh for host %s", self.host)
 
         except Exception as ex:
-            _LOGGER.exception("Config not ready, first refresh failed for host %s", self.host)
-            raise ConfigEntryNotReady from ex
+            # Home Assistant itself logs that the entry is retried; keep the details at debug
+            _LOGGER.debug("First refresh failed for host %s", self.host, exc_info=True)
+            raise ConfigEntryNotReady(f"Philips device at {self.host} does not answer") from ex
 
     async def async_set_control_values(self, data: dict[str, Any]) -> bool:
         """Send a command to the device: one at a time, paced and with a timeout."""
@@ -219,6 +235,9 @@ class Coordinator:
                 _LOGGER.debug("Ignoring unexpected status from %s: %s", self.host, type(status))
                 continue
             self.status = status
+            if self._connection_lost_logged:
+                self._connection_lost_logged = False
+                _LOGGER.info("Connection to Philips device at %s restored", self.host)
             if self._failures:
                 # data flows again: back to the normal watchdog interval
                 self._failures = 0

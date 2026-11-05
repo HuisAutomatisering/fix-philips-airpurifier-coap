@@ -5,8 +5,9 @@
     "abort": {
       "already_configured": "Device already configured",
       "model_unsupported": "Model unsupported",
-      "timeout": "Timeout, cannot connect to device",
-      "cannot_connect": "Cannot connect to device"
+      "timeout": "The device does not answer yet. Philips devices can need up to 3 minutes after a Home Assistant restart or after removing the integration. Try again in a few minutes.",
+      "cannot_connect": "Cannot connect to device",
+      "already_in_progress": "Setting up this device is already in progress"
     },
     "step": {
       "user": {
@@ -25,7 +26,7 @@
     "error": {
       "host": "Invalid hostname or IP address",
       "connect": "Cannot connect to device",
-      "timeout": "Timeout, the device does not answer"
+      "timeout": "The device does not answer yet. Philips devices can need up to 3 minutes after a Home Assistant restart or after removing the integration. Try again in a few minutes."
     }
   },
   "options": {
@@ -43,7 +44,7 @@
     "error": {
       "host": "Invalid hostname or IP address",
       "connect": "Cannot connect to device",
-      "timeout": "Timeout, cannot connect to device",
+      "timeout": "The device does not answer yet. Philips devices can need up to 3 minutes after a Home Assistant restart or after removing the integration. Try again in a few minutes.",
       "different_device": "The device at this address is not the same as the configured device"
     }
   },
