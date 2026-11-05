@@ -1,4 +1,4 @@
-# Philips AirPurifier (with CoAP)
+# Philips AirPurifier Local (CoAP)
 
 [![Release](https://img.shields.io/github/v/release/HuisAutomatisering/fix-philips-airpurifier-coap?sort=semver&display_name=tag)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/releases/latest)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
@@ -8,6 +8,7 @@
 [![Tests](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml)
 [![Quality scale: Bronze](https://img.shields.io/badge/quality%20scale-Bronze%20(aligned)-cd7f32.svg)](#quality-scale)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/HuisAutomatisering/fix-philips-airpurifier-coap/badge)](https://scorecard.dev/viewer/?uri=github.com/HuisAutomatisering/fix-philips-airpurifier-coap)
 
 [![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=HuisAutomatisering&repository=fix-philips-airpurifier-coap&category=integration)
 
@@ -16,22 +17,22 @@ Currently only encrypted CoAP is implemented.
 
 ## About this fork
 
-This repository is a one-time-upgraded (not maintaned) fork of
+This repository is a maintained fork of
 [kongo09/philips-airpurifier-coap](https://github.com/kongo09/philips-airpurifier-coap).
 All device support comes from the original project and its contributors (see [Credits](#credits)).
+It uses its own domain, `philips_airpurifier_local`, so it can be installed next to the original.
 This fork adds:
 
 - the `UnitOfDensity` fix for the deprecated `CONCENTRATION_MICROGRAMS_PER_CUBIC_METER` constant
-  (removed in Home Assistant 2027.8)
-- alignment with the Home Assistant quality scale **Bronze** tier (runtime data, config flow
-  tests, setup tests, field descriptions, removal instructions)
-- more robust reconnect handling (timeout on reconnect attempts, errors are logged instead of
-  silently dropped)
-- CI for Ruff, hassfest, HACS validation, tests and CodeQL
-- the Philips (`pap:`) icons are set from code, so `icons.json` passes hassfest with MDI fallbacks
-
-The integration domain is unchanged (`philips_airpurifier_coap`), so existing devices,
-entities and automations keep working when you switch.
+- alignment with the Home Assistant quality scale **Bronze** tier
+- hardening against a misbehaving device: bounded reconnect watchdog, growing pause between
+  failed reconnects, one command at a time with a timeout, unusable values shown as unknown
+  instead of errors (covered by property-based fuzz tests)
+- privacy: device id, product id and name are redacted in the debug log and the id attributes are
+  kept out of the recorder history
+- signed releases: HACS installs a zip with a SLSA build provenance attestation
+- CI for Ruff (incl. Bandit security rules), hassfest, HACS validation, tests, CodeQL and
+  OpenSSF Scorecard, with all GitHub Actions pinned by commit
 
 ## Word of caution
 
@@ -53,17 +54,27 @@ This integration is installed through [HACS](https://hacs.xyz) as a custom repos
 
 1. Click the **Open in HACS** badge above, or in HACS open the menu (three dots) →
    **Custom repositories**, add `https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap` with category **Integration**.
-2. Download **Philips AirPurifier (with CoAP)** in HACS.
+2. Download **Philips AirPurifier Local (CoAP)** in HACS.
 3. Restart Home Assistant.
+
+HACS downloads `philips_airpurifier_local.zip` from the release. You can verify that the zip was
+built by this repository's release workflow with the GitHub CLI:
+
+```bash
+gh attestation verify philips_airpurifier_local.zip --repo HuisAutomatisering/fix-philips-airpurifier-coap
+```
 
 ### Switching from the original integration
 
-Both repositories use the same domain, so only one of them can be installed:
+This integration has its own domain, so you can install it next to the original
+*Philips AirPurifier (with CoAP)*. Your devices have to be added again:
 
-1. In HACS, remove the original *Philips AirPurifier (with CoAP)* repository
-   (your config entries stay in Home Assistant).
-2. Add this repository as described above and download it.
-3. Restart Home Assistant. Your devices and entities are picked up again as they were.
+1. Delete the purifier from the original integration first (**Settings** → **Devices &
+   services**). This frees its entity IDs, so the new entities usually get the same IDs and your
+   automations keep working.
+2. Install this integration as described above and add the purifier (autodiscovery or IP address).
+3. When everything works, remove the original integration in HACS. While both are installed,
+   both may offer a discovered purifier: pick this one.
 
 ## Configuration
 
@@ -72,7 +83,7 @@ Both repositories use the same domain, so only one of them can be installed:
   successful.
 * Alternatively, go to **Settings** → **Devices & services**
 * Click **Add Integration**
-* Search for **Philips AirPurifier** and select it
+* Search for **Philips AirPurifier Local** and select it
 * Enter the hostname or IP address of your device
 * The model type is detected automatically. You get a warning in the log if it is not supported.
 
@@ -92,17 +103,38 @@ Note: `configuration.yaml` is not supported.
 
 ## Removal
 
-1. Go to **Settings** → **Devices & services** → **Philips AirPurifier**.
+1. Go to **Settings** → **Devices & services** → **Philips AirPurifier Local**.
 2. Open the menu (three dots) of each device entry and select **Delete**.
-3. In HACS, open **Philips AirPurifier (with CoAP)**, open the menu and select **Remove**.
+3. In HACS, open **Philips AirPurifier Local (CoAP)**, open the menu and select **Remove**.
 4. Restart Home Assistant.
+
+## Security and network
+
+The Philips CoAP protocol uses a fixed, publicly known key and no authentication: every device
+that can reach the purifier on your network can read and control it. The integration cannot
+change that, so the protection has to come from the network:
+
+- Put the purifier in an IoT VLAN and give it a fixed IP address (DHCP reservation).
+- Allow only Home Assistant → purifier on **UDP 5683** (stateful, so the answers are allowed back).
+- Block the purifier from reaching your other LAN devices.
+- Optional: block the purifier's internet access. Then the Philips app and cloud stop working,
+  but a firmware update can no longer switch off local control.
+- Autodiscovery does not work across VLANs: add the purifier by IP address.
+
+The integration itself opens no listening ports. It only uses an outgoing UDP (CoAP) connection
+to the purifier, and serves its icons to the Home Assistant frontend.
+
+Debug logs of this integration redact the device id, product id and name. The `coap` and
+`aioairctrl` loggers print full device messages: only enable those temporarily.
+
+Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ## Quality scale
 
 This integration is **aligned with the Home Assistant quality scale: Bronze**.
 Home Assistant only grades core integrations, so this is a self-assessment and not an official
 tier. The status per rule is documented in
-[`quality_scale.yaml`](custom_components/philips_airpurifier_coap/quality_scale.yaml).
+[`quality_scale.yaml`](custom_components/philips_airpurifier_local/quality_scale.yaml).
 
 ## License
 
@@ -236,7 +268,7 @@ To aquire debug-logs, add the following to your `configuration.yaml`:
 ```yaml
 logger:
   logs:
-    custom_components.philips_airpurifier_coap: debug
+    custom_components.philips_airpurifier_local: debug
     coap: debug
     aioairctrl: debug
 ```
@@ -257,7 +289,7 @@ The goal is, to offer all existing functionality that is also available both, on
 
 ### Services
 
-Unlike the original `philips_airpurifier_coap` integration, this version does not provide any additional services anymore. Everything can be controlled through the entities provided.
+Unlike the original `philips_airpurifier_local` integration, this version does not provide any additional services anymore. Everything can be controlled through the entities provided.
 
 
 ### Attributes
@@ -285,47 +317,47 @@ The integration also provides the original Philips icons for your use in the fro
 
 | icon                                                                                           | name                    |
 |------------------------------------------------------------------------------------------------|-------------------------|
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/power_button.svg)            | power_button            |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/child_lock_button.svg)       | child_lock_button       |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/child_lock_button_open.svg)  | child_lock_button_open  |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/auto_mode_button.svg)        | auto_mode_button        |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/fan_speed_button.svg)        | fan_speed_button        |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/humidity_button.svg)         | humidity_button         |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/light_dimming_button.svg)    | light_dimming_button    |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/light_function.svg)          | light_function          |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/ambient_light.svg)           | ambient_light           |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/two_in_one_mode_button.svg)  | two_in_one_mode_button  |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/timer_reset_button.svg)      | timer_reset_button      |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/sleep_mode.svg)              | sleep_mode              |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/auto_mode.svg)               | auto_mode               |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/speed_1.svg)                 | speed_1                 |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/speed_2.svg)                 | speed_2                 |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/speed_3.svg)                 | speed_3                 |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/allergen_mode.svg)           | allergen_mode           |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/purification_only_mode.svg)  | purification_only_mode  |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/two_in_one_mode.svg)         | two_in_one_mode         |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/bacteria_virus_mode.svg)     | bacteria_virus_mode     |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/pollution_mode.svg)          | pollution_mode          |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/nanoprotect_filter.svg)      | nanoprotect_filter      |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/filter_replacement.svg)      | filter_replacement      |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/water_refill.svg)            | water_refill            |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/prefilter_cleaning.svg)      | prefilter_clearning     |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/prefilter_wick_cleaning.svg) | prefilter_wick_cleaning |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/pm25.svg)                    | pm25                    |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/iai.svg)                     | iai                     |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/wifi.svg)                    | wifi                    |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/reset.svg)                   | reset                   |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/circulate.svg)               | circulate               |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/clean.svg)                   | clean                   |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/mode.svg)                    | mode                    |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/pm25b.svg)                   | pm25b                   |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/rotate.svg)                  | rotate                  |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/oscillate.svg)               | oscillate               |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/heating.svg)                 | heating                 |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/gas.svg)                     | gas                     |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/circle.svg)                  | circle                  |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/temp_high.svg)               | temp_high               |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/temp_medium.svg)             | temp_medium             |
-| ![Preview](./custom_components/philips_airpurifier_coap/icons/pap/temp_low.svg)                | temp_low                |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/power_button.svg)            | power_button            |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/child_lock_button.svg)       | child_lock_button       |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/child_lock_button_open.svg)  | child_lock_button_open  |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/auto_mode_button.svg)        | auto_mode_button        |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/fan_speed_button.svg)        | fan_speed_button        |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/humidity_button.svg)         | humidity_button         |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/light_dimming_button.svg)    | light_dimming_button    |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/light_function.svg)          | light_function          |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/ambient_light.svg)           | ambient_light           |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/two_in_one_mode_button.svg)  | two_in_one_mode_button  |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/timer_reset_button.svg)      | timer_reset_button      |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/sleep_mode.svg)              | sleep_mode              |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/auto_mode.svg)               | auto_mode               |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/speed_1.svg)                 | speed_1                 |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/speed_2.svg)                 | speed_2                 |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/speed_3.svg)                 | speed_3                 |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/allergen_mode.svg)           | allergen_mode           |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/purification_only_mode.svg)  | purification_only_mode  |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/two_in_one_mode.svg)         | two_in_one_mode         |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/bacteria_virus_mode.svg)     | bacteria_virus_mode     |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/pollution_mode.svg)          | pollution_mode          |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/nanoprotect_filter.svg)      | nanoprotect_filter      |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/filter_replacement.svg)      | filter_replacement      |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/water_refill.svg)            | water_refill            |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/prefilter_cleaning.svg)      | prefilter_clearning     |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/prefilter_wick_cleaning.svg) | prefilter_wick_cleaning |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/pm25.svg)                    | pm25                    |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/iai.svg)                     | iai                     |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/wifi.svg)                    | wifi                    |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/reset.svg)                   | reset                   |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/circulate.svg)               | circulate               |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/clean.svg)                   | clean                   |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/mode.svg)                    | mode                    |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/pm25b.svg)                   | pm25b                   |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/rotate.svg)                  | rotate                  |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/oscillate.svg)               | oscillate               |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/heating.svg)                 | heating                 |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/gas.svg)                     | gas                     |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/circle.svg)                  | circle                  |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/temp_high.svg)               | temp_high               |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/temp_medium.svg)             | temp_medium             |
+| ![Preview](./custom_components/philips_airpurifier_local/icons/pap/temp_low.svg)                | temp_low                |
 
 Note: you might have to clear your browser cache after installation to see the icons.

@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import MAC, STATUS_AC2889
 
-DOMAIN_MODULE = "custom_components.philips_airpurifier_coap"
+DOMAIN_MODULE = "custom_components.philips_airpurifier_local"
 
 
 @pytest.fixture(autouse=True)

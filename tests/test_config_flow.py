@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.philips_airpurifier_coap.config_flow import host_valid
-from custom_components.philips_airpurifier_coap.const import (
+from custom_components.philips_airpurifier_local.config_flow import host_valid
+from custom_components.philips_airpurifier_local.const import (
     CONF_DEVICE_ID,
     CONF_MODEL,
     CONF_STATUS,
@@ -68,6 +68,8 @@ def _add_entry(hass: HomeAssistant, host: str = HOST) -> MockConfigEntry:
         ("bad host", False),
         ("bad..host", False),
         ("under_score", False),
+        ("a" * 254, False),
+        ("a" * 63 + "." + "b" * 63, True),
     ],
 )
 def test_host_valid(host: str, valid: bool) -> None:

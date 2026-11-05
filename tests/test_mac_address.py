@@ -1,6 +1,6 @@
 """Tests for MAC address handling."""
 
-from custom_components.philips_airpurifier_coap.helpers import normalize_connection_mac
+from custom_components.philips_airpurifier_local.helpers import normalize_connection_mac
 
 
 def test_all_zero_mac_is_ignored() -> None:

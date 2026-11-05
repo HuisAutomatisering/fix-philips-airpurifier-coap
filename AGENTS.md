@@ -1,4 +1,4 @@
-# Agents Guidelines for philips_airpurifier_coap
+# Agents Guidelines for philips_airpurifier_local
 
 ## Project Overview
 
@@ -6,7 +6,7 @@ Home Assistant custom integration for Philips air purifiers, humidifiers, and
 heaters that communicate over CoAP. Supports 50+ device models across three
 API generations.
 
-- **Domain:** `philips_airpurifier_coap`
+- **Domain:** `philips_airpurifier_local`
 - **Platforms:** `binary_sensor`, `climate`, `fan`, `humidifier`, `light`,
   `number`, `select`, `sensor`, `switch`
 - **External dependencies:** `aioairctrl` (CoAP client), `getmac` (MAC detection)
@@ -16,7 +16,7 @@ API generations.
 ## File Structure
 
 ```
-custom_components/philips_airpurifier_coap/
+custom_components/philips_airpurifier_local/
 ├── __init__.py           # Entry setup/unload, icon serving, MAC detection
 ├── config_flow.py        # Config flow with DHCP discovery + options flow
 ├── config_entry_data.py  # ConfigEntryData dataclass + PhilipsConfigEntry type
@@ -90,11 +90,12 @@ Platform `async_setup_entry` functions:
 2. Device pushes status updates → coordinator stores in `self.data`
 3. `async_set_updated_data()` notifies all entity listeners
 4. Entities read values from `self.coordinator.data`
-5. Control commands sent via `self._client.set_control_values()`
+5. Control commands go through `coordinator.async_set_control_values()` (one at a time,
+   paced, with a timeout)
 
 ### Custom Icons
 
-Custom PAP icons are served via HTTP at `/api/philips_airpurifier_coap/icons/`.
+Custom PAP icons are served via HTTP at `/api/philips_airpurifier_local/icons/`.
 The `ICON` enum maps icon names to filenames.
 
 ## Key Patterns
@@ -104,7 +105,7 @@ The `ICON` enum maps icon names to filenames.
 - **DHCP discovery:** 5 MAC prefixes + hostname pattern `mxchip*` +
   `registered_devices` trigger
 - **Reconnection:** Coordinator uses Timer; if 3 status updates missed,
-  triggers full reconnect cycle
+  triggers full reconnect cycle (Max-Age clamped to 15-600 s, backoff up to 300 s)
 - **Model detection:** Config flow tries exact model match, then model + firmware
   suffix, then model family (first 6 chars)
 

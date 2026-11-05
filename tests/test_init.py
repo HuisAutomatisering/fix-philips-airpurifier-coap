@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.philips_airpurifier_coap.const import CONF_STATUS, DOMAIN
+from custom_components.philips_airpurifier_local.const import CONF_STATUS, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr

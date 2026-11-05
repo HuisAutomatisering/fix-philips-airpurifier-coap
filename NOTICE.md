@@ -15,7 +15,7 @@ authors and contributors. A request to add an explicit license file upstream is 
 ## Third-party code
 
 The icon loading code is MIT licensed by Thomas Lovén, see
-[`custom_components/philips_airpurifier_coap/LICENSE.txt`](custom_components/philips_airpurifier_coap/LICENSE.txt).
+[`custom_components/philips_airpurifier_local/LICENSE.txt`](custom_components/philips_airpurifier_local/LICENSE.txt).
 
 ## Changes in this fork
 

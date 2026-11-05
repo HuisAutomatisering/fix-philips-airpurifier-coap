@@ -1,4 +1,4 @@
-const DOMAIN = "philips_airpurifier_coap";
+const DOMAIN = "philips_airpurifier_local";
 
 const ICON_STORE = {};
 
@@ -61,7 +61,10 @@ const getIcon = (iconSet, iconName) => {
 };
 
 const getIconList = async (iconSet) => {
-  const data = await fetch(`/${DOMAIN}/list/${iconSet}`);
+  // the list endpoint requires authentication, use the logged-in frontend session
+  const hass = document.querySelector("home-assistant")?.hass;
+  const url = `/${DOMAIN}/list/${iconSet}`;
+  const data = hass?.fetchWithAuth ? await hass.fetchWithAuth(url) : await fetch(url);
   const text = await data.text();
   return JSON.parse(text);
 };

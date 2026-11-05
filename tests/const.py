@@ -1,6 +1,10 @@
 """Shared test data for the Philips AirPurifier tests."""
 
-from custom_components.philips_airpurifier_coap.const import CONF_DEVICE_ID, CONF_MODEL, CONF_STATUS
+from custom_components.philips_airpurifier_local.const import (
+    CONF_DEVICE_ID,
+    CONF_MODEL,
+    CONF_STATUS,
+)
 from homeassistant.const import CONF_HOST, CONF_NAME
 
 HOST = "192.168.1.50"
