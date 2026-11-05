@@ -1,0 +1,41 @@
+name: Fuzz
+
+# Coverage-guided fuzzing (Atheris) of the code that handles untrusted device data.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Atheris
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements_test.txt
+      - name: Install dependencies
+        # Test-only dependencies (Home Assistant test harness + fuzzer), not shipped to users.
+        run: pip install -r requirements_test.txt atheris
+      - name: Fuzz device data handling (60 s)
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python fuzz/fuzz_device_data.py -max_total_time=60 -rss_limit_mb=4096
+      - name: Keep crash inputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-crashes
+          path: crash-*
+          if-no-files-found: ignore
+          retention-days: 14
