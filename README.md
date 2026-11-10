@@ -374,4 +374,10 @@ The integration also provides the original Philips icons for your use in the fro
 
 Note: you might have to clear your browser cache after installation to see the icons.
 
-This project is an independent, community-made integration. It is not affiliated with, endorsed by, sponsored by or otherwise connected to Koninklijke Philips N.V., Versuni (formerly Philips Domestic Appliances) or any of their subsidiaries. “Philips” and the product names mentioned are trademarks of their respective owners and are used only to identify compatible devices. Use at your own risk.
+## Disclaimer
+
+This project is an independent, community-made integration. It is not affiliated with, endorsed
+by, sponsored by or otherwise connected to Koninklijke Philips N.V., Versuni (formerly Philips
+Domestic Appliances) or any of their subsidiaries. "Philips" and the product names mentioned are
+trademarks of their respective owners and are used only to identify compatible devices. Use at
+your own risk.

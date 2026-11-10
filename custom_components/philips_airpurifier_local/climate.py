@@ -14,7 +14,7 @@ from homeassistant.components.climate.const import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
+from homeassistant.const import ATTR_TEMPERATURE, MAJOR_VERSION, MINOR_VERSION, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -22,10 +22,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .config_entry_data import ConfigEntryData
 from .const import HEATER_TYPES, SWITCH_OFF, SWITCH_ON, FanAttributes, PresetMode
 from .helpers import safe_float
-from .model import DeviceStatus
 from .philips import PhilipsGenericControlBase, model_to_class
 
 _LOGGER = logging.getLogger(__name__)
+
+# Home Assistant 2026.11 renamed the climate temperature properties to native_*
+# (the old names stop working in 2027.11). Use the names this version expects.
+NATIVE_TEMPERATURE = (MAJOR_VERSION, MINOR_VERSION) >= (2026, 11)
 
 
 async def async_setup_entry(
@@ -57,7 +60,6 @@ async def async_setup_entry(
 
             # Get the available oscillation from the base classes
             cls_available_oscillation = getattr(cls, "KEY_OSCILLATION", {})
-            _LOGGER.debug("Available oscillation: %s", cls_available_oscillation)
             if cls_available_oscillation:
                 available_oscillation.update(cls_available_oscillation)
 
@@ -93,7 +95,10 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
     """Define a Philips AirPurifier heater."""
 
     _attr_is_on: bool | None = False
-    _attr_temperature_unit: str = UnitOfTemperature.CELSIUS
+    if NATIVE_TEMPERATURE:
+        _attr_native_temperature_unit: str = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit: str = UnitOfTemperature.CELSIUS
     _attr_hvac_modes: ClassVar[list[HVACMode]] = [
         HVACMode.OFF,
         HVACMode.HEAT,
@@ -117,7 +122,6 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
         super().__init__(hass, config, config_entry_data)
 
         self._model = config_entry_data.device_information.model
-        latest_status: DeviceStatus = config_entry_data.latest_status or {}
 
         self._description: dict[str, Any] = cast(dict[str, Any], HEATER_TYPES[heater])
 
@@ -132,12 +136,10 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
         self._power_key = self._description[FanAttributes.POWER]
         self._temperature_target_key = heater.partition("#")[0]
 
+        self._current_temperature_key = self._description[FanAttributes.TEMPERATURE]
+
         self._attr_min_temp = self._description[FanAttributes.MIN_TEMPERATURE]
         self._attr_max_temp = self._description[FanAttributes.MAX_TEMPERATURE]
-        self._attr_target_temperature = latest_status.get(self._temperature_target_key)
-        self._attr_current_temperature = latest_status.get(
-            self._description[FanAttributes.TEMPERATURE]
-        )
 
         self._attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE
@@ -145,6 +147,12 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
             | ClimateEntityFeature.TURN_ON
             | ClimateEntityFeature.TURN_OFF
         )
+
+        # optional features: safe defaults when the model has them not
+        self._oscillation_key: str | None = None
+        self._oscillation_modes: dict[str, Any] = {}
+        self._heating_action_key: str | None = None
+        self._heating_action_map: dict[Any, HVACAction] = {}
 
         # some devices can oscillate
         if available_oscillation:
@@ -158,10 +166,20 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
             self._heating_action_key = next(iter(available_heating_actions.keys()))
             self._heating_action_map = available_heating_actions[self._heating_action_key]
 
-    @property
-    def target_temperature(self) -> float | None:
-        """Return the target temperature."""
+    def _get_target_temperature(self) -> float | None:
+        """Return the target temperature in °C."""
         return safe_float(self._device_status.get(self._temperature_target_key))
+
+    def _get_current_temperature(self) -> float | None:
+        """Return the measured temperature in °C (follows the device updates)."""
+        return safe_float(self._device_status.get(self._current_temperature_key))
+
+    if NATIVE_TEMPERATURE:
+        native_target_temperature = property(_get_target_temperature)
+        native_current_temperature = property(_get_current_temperature)
+    else:
+        target_temperature = property(_get_target_temperature)
+        current_temperature = property(_get_current_temperature)
 
     @property
     def hvac_action(self) -> HVACAction | None:
@@ -169,6 +187,8 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
         if not self.is_on:
             return HVACAction.OFF
 
+        if self._heating_action_key is None:
+            return HVACAction.HEATING
         value = self._device_status.get(self._heating_action_key)
         if isinstance(value, str | int | float | bool) and value in self._heating_action_map:
             return self._heating_action_map[value]
@@ -231,7 +251,7 @@ class PhilipsHeater(PhilipsGenericControlBase, ClimateEntity):
             return None
 
         value = self._device_status.get(self._oscillation_key)
-        if value == self._oscillation_modes[SWITCH_OFF]:
+        if value == self._oscillation_modes.get(SWITCH_OFF):
             return SWING_OFF
 
         return SWING_ON

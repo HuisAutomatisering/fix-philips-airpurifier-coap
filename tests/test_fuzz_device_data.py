@@ -11,10 +11,12 @@ from typing import Any
 from hypothesis import HealthCheck, given, settings, strategies as st
 
 from custom_components.philips_airpurifier_local.binary_sensor import PhilipsBinarySensor
+from custom_components.philips_airpurifier_local.climate import PhilipsHeater
 from custom_components.philips_airpurifier_local.config_flow import resolve_model
 from custom_components.philips_airpurifier_local.const import (
     BINARY_SENSOR_TYPES,
     FILTER_TYPES,
+    HEATER_TYPES,
     LIGHT_TYPES,
     NUMBER_TYPES,
     SELECT_TYPES,
@@ -182,6 +184,28 @@ def test_number_states(kind: str, value: Any) -> None:
     number = PhilipsNumber(None, None, _entry_data({**STATUS_AC2889, kind: value}), kind)
     native = number.native_value
     assert native is None or isinstance(native, float)
+
+
+@FUZZ
+@given(
+    kind=st.sampled_from(sorted(HEATER_TYPES)),
+    target=device_values,
+    current=device_values,
+    power=device_values,
+)
+def test_heater_states(kind: str, target: Any, current: Any, power: Any) -> None:
+    """The heater survives any temperature and power values."""
+    spec = HEATER_TYPES[kind]
+    status = {
+        **STATUS_AC2889,
+        kind.partition("#")[0]: target,
+        spec[FanAttributes.TEMPERATURE]: current,
+        spec[FanAttributes.POWER]: power,
+    }
+    heater = PhilipsHeater(None, None, _entry_data(status), kind, {}, {}, {})
+    for value in (heater._get_target_temperature(), heater._get_current_temperature()):
+        assert value is None or isinstance(value, float)
+    _ = (heater.hvac_action, heater.hvac_mode, heater.preset_mode)
 
 
 @FUZZ

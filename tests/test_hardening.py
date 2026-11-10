@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from custom_components.philips_airpurifier_local import ListingView, coordinator as coord_module
+from custom_components.philips_airpurifier_local.climate import NATIVE_TEMPERATURE, PhilipsHeater
 from custom_components.philips_airpurifier_local.const import DOMAIN
 from custom_components.philips_airpurifier_local.coordinator import Coordinator
 from custom_components.philips_airpurifier_local.helpers import (
@@ -66,6 +67,19 @@ def test_redact_status() -> None:
 def test_device_ids_not_recorded() -> None:
     """Device and product id attributes are excluded from the recorder."""
     assert {"device_id", "product_id"} <= PhilipsGenericControlBase._unrecorded_attributes
+
+
+def test_heater_temperature_api_matches_ha_version() -> None:
+    """The heater uses native_* temperature properties from HA 2026.11, the old names before."""
+    own = vars(PhilipsHeater).keys()
+    native = {"native_target_temperature", "native_current_temperature"}
+    legacy = {"target_temperature", "current_temperature"}
+    if NATIVE_TEMPERATURE:
+        assert native <= own
+        assert not legacy & own
+    else:
+        assert legacy <= own
+        assert not native & own
 
 
 def test_icon_list_requires_auth() -> None:

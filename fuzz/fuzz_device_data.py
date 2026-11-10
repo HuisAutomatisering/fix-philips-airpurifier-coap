@@ -18,10 +18,12 @@ import atheris
 
 with atheris.instrument_imports(include=["custom_components.philips_airpurifier_local"]):
     from custom_components.philips_airpurifier_local.binary_sensor import PhilipsBinarySensor
+    from custom_components.philips_airpurifier_local.climate import PhilipsHeater
     from custom_components.philips_airpurifier_local.config_flow import resolve_model
     from custom_components.philips_airpurifier_local.const import (
         BINARY_SENSOR_TYPES,
         FILTER_TYPES,
+        HEATER_TYPES,
         LIGHT_TYPES,
         NUMBER_TYPES,
         SELECT_TYPES,
@@ -64,6 +66,9 @@ STATUS_KEYS: list[str] = sorted(
         *FILTER_TYPES,
         *(spec[FanAttributes.TOTAL] for spec in FILTER_TYPES.values()),
         *(spec[FanAttributes.TYPE] for spec in FILTER_TYPES.values()),
+        *(key.partition("#")[0] for key in HEATER_TYPES),
+        *(spec[FanAttributes.TEMPERATURE] for spec in HEATER_TYPES.values()),
+        *(spec[FanAttributes.POWER] for spec in HEATER_TYPES.values()),
         "pwr",
         "mode",
         "om",
@@ -118,6 +123,15 @@ def _check_entities(status: dict[str, Any]) -> None:
         _ = PhilipsSelect(None, None, data, kind).current_option
     for kind in NUMBER_TYPES:
         _ = PhilipsNumber(None, None, data, kind).native_value
+    for kind in HEATER_TYPES:
+        heater = PhilipsHeater(None, None, data, kind, {}, {}, {})
+        _ = (
+            heater._get_target_temperature(),
+            heater._get_current_temperature(),
+            heater.hvac_action,
+            heater.hvac_mode,
+            heater.preset_mode,
+        )
     fan = PhilipsAC2889(None, None, data)
     _ = (fan.is_on, fan.preset_mode, fan.percentage, fan.icon, fan.extra_state_attributes)
 
