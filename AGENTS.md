@@ -137,6 +137,14 @@ ruff format --check custom_components/ tests/
 python -m pytest tests/ -x -q
 ```
 
+### Local only
+
+```bash
+python3 scripts/check_local_only.py
+```
+
+The runtime side is `tests/test_local_only.py` (real client against `tests/fake_device.py`).
+
 ### Fuzzing
 
 ```bash

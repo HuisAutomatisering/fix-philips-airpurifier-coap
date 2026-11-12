@@ -8,6 +8,9 @@
 [![Tests](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/codeql.yml)
 [![Fuzz](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/fuzz.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/fuzz.yml)
+[![Local only](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/local-only.yml/badge.svg?branch=master)](https://github.com/HuisAutomatisering/fix-philips-airpurifier-coap/actions/workflows/local-only.yml)
+[![IoT class](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FHuisAutomatisering%2Ffix-philips-airpurifier-coap%2Fmaster%2Fcustom_components%2Fphilips_airpurifier_local%2Fmanifest.json&query=%24.iot_class&label=IoT%20class&color=41BDF5)](#local-only)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Quality scale: Bronze](https://img.shields.io/badge/quality%20scale-Bronze%20(aligned)-cd7f32.svg)](#quality-scale)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/HuisAutomatisering/fix-philips-airpurifier-coap/badge)](https://scorecard.dev/viewer/?uri=github.com/HuisAutomatisering/fix-philips-airpurifier-coap)
 
@@ -33,8 +36,8 @@ This fork adds:
 - privacy: device id, product id and name are redacted in the debug log and the id attributes are
   kept out of the recorder history
 - signed releases: HACS installs a zip with a SLSA build provenance attestation
-- CI for Ruff (incl. Bandit security rules), hassfest, HACS validation, tests, CodeQL and
-  OpenSSF Scorecard, with all GitHub Actions pinned by commit
+- CI for Ruff (incl. Bandit security rules), hassfest, HACS validation, tests, CodeQL,
+  a local-only check and OpenSSF Scorecard, with all GitHub Actions pinned by commit
 
 ## Word of caution
 
@@ -117,6 +120,34 @@ Note: `configuration.yaml` is not supported.
 2. Open the menu (three dots) of each device entry and select **Delete**.
 3. In HACS, open **Philips AirPurifier Local (CoAP)**, open the menu and select **Remove**.
 4. Restart Home Assistant.
+
+## Local only
+
+The integration only talks to your purifier, never to the internet or any other service.
+All device traffic is encrypted CoAP over UDP to the configured address, port 5683.
+Two small, documented exceptions, both local:
+
+- To find the purifier's MAC address (for the device registry), the `getmac` library reads the
+  local ARP table. To fill that table it may send one empty UDP packet to the purifier's own IP
+  address on port 55555 during setup. Blocking that port in a firewall is harmless.
+- The Philips icons are served by Home Assistant's own web server to its own frontend (no new
+  port, nothing outgoing); the icon list requires a login.
+
+Two automated checks back the **Local only** badge:
+
+- `scripts/check_local_only.py` (the badge's workflow) reads the manifest, the Python code and
+  the frontend JavaScript: local IoT class, only the allowed dependencies and packages, the
+  device client only for the configured host and port, no listeners, sockets or webhooks, and no
+  hard-coded internet addresses.
+- The tests run the real client against a fake purifier and record every connection and packet
+  during the config flow, setup, push updates and commands. All of them must go to the
+  configured address: port 5683, plus the getmac packet above.
+
+The **IoT class** badge shows the class declared in the manifest (`local_push`: the purifier
+pushes changes over the local network).
+
+This covers the integration itself; what Home Assistant does (for example its optional
+analytics) is up to your Home Assistant settings.
 
 ## Security and network
 
